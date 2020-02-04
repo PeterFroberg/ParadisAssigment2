@@ -3,7 +3,6 @@
 package com.company;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -13,7 +12,7 @@ class Bank {
 	// Instance variables.
 	private final List<Account> accounts = new ArrayList<Account>();
 
-	private Map<Integer, ReentrantLock> accountlocks = new ConcurrentHashMap<>();
+	private Hashtable<Integer, ReentrantReadWriteLock> accountlocks = new Hashtable<>();
 	//ReentrantLock transactionLock = new ReentrantLock();
 
 	// Instance methods.
@@ -22,7 +21,7 @@ class Bank {
 		int accountId;
 		accountId = accounts.size(); // FIX ORIGINAL
 		accounts.add(new Account(accountId, balance));
-		accountlocks.put(accountId, new ReentrantLock());
+		accountlocks.put(accountId, new ReentrantReadWriteLock());
 		return accountId;
 	}
 
@@ -36,12 +35,12 @@ class Bank {
 		Account account = null;
 		account = accounts.get(operation.getAccountId());
 		//Lås account
-		accountlocks.get(operation.getAccountId()).lock();
+		accountlocks.get(operation.getAccountId()).writeLock().lock();
 		int balance = account.getBalance();
 		balance = balance + operation.getAmount();
 		account.setBalance(balance);
 		//if(accountlocks.get(operation.getAccountId()).isHeldByCurrentThread()){
-			accountlocks.get(operation.getAccountId()).unlock();
+		accountlocks.get(operation.getAccountId()).writeLock().unlock();
 		//}
 		//lås upp acoount
 	}
@@ -57,8 +56,10 @@ class Bank {
 		for (int x = 0; x < 100; x++) {
 			try {
 				while (allLocksAcquiered && !operationsCompleted) {
-					if (!accountlocks.get(currentOperations.get(i).getAccountId()).tryLock()) {
+					if (accountlocks.get(currentOperations.get(i).getAccountId()).isWriteLocked()) {
 						allLocksAcquiered = false;
+					}else{
+						accountlocks.get(currentOperations.get(i).getAccountId()).writeLock();
 					}
 					i++;
 					if (i >= currentOperations.size()) {
@@ -73,8 +74,8 @@ class Bank {
 				}
 			} finally {
 				for (Operation o : currentOperations) {
-					if (accountlocks.get(o.getAccountId()).isHeldByCurrentThread()) {
-						accountlocks.get(o.getAccountId()).unlock();
+					if (accountlocks.get(o.getAccountId()).isWriteLockedByCurrentThread()) {
+						accountlocks.get(o.getAccountId()).writeLock().unlock();
 					}
 				}
 			}

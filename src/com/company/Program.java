@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Program {
     // Static variables.
-    private static final int NUM_THREADS = 4;
+    private static final int NUM_THREADS = 1;
     private static final int NUM_ACCOUNTS = 6;
     private static final int FACTOR = 100000;
     private static final int TIMEOUT = 60; // Seconds;
@@ -102,7 +102,7 @@ public class Program {
     // Entry point.
     public static void main(String[] args) {
         initiate();
-       // runTestOperations();
+        runTestOperations();
         runTestTransactions();
     }
 }
