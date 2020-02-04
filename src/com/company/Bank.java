@@ -2,9 +2,8 @@
 
 package com.company;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -14,7 +13,7 @@ class Bank {
 	// Instance variables.
 	private final List<Account> accounts = new ArrayList<Account>();
 
-	private HashMap<Integer, ReentrantLock> accountlocks = new HashMap<>();
+	private Map<Integer, ReentrantLock> accountlocks = new ConcurrentHashMap<>();
 	//ReentrantLock transactionLock = new ReentrantLock();
 
 	// Instance methods.
@@ -49,33 +48,43 @@ class Bank {
 
 	void runTransaction(Transaction transaction) {
 		List<Operation> currentOperations = transaction.getOperations();
-
+		Random random = new Random();
 		boolean allLocksAcquiered = true;
 		boolean operationsCompleted = false;
 		// Låsa alla konton med reentrant lock som finns i currentOperations
 
 		int i = 0;
-		try {
-			while (allLocksAcquiered && !operationsCompleted) {
-				if (!accountlocks.get(currentOperations.get(i).getAccountId()).tryLock()) {
-					allLocksAcquiered = false;
+		for (int x = 0; x < 100; x++) {
+			try {
+				while (allLocksAcquiered && !operationsCompleted) {
+					if (!accountlocks.get(currentOperations.get(i).getAccountId()).tryLock()) {
+						allLocksAcquiered = false;
+					}
+					i++;
+					if (i >= currentOperations.size()) {
+						operationsCompleted = true;
+					}
 				}
-				i++;
-				if(i >= currentOperations.size()){
-					operationsCompleted = true;
+				if (allLocksAcquiered) {
+					for (Operation operation : currentOperations) {
+						runOperation(operation);
+					}
+					break;
+				}
+			} finally {
+				for (Operation o : currentOperations) {
+					if (accountlocks.get(o.getAccountId()).isHeldByCurrentThread()) {
+						accountlocks.get(o.getAccountId()).unlock();
+					}
 				}
 			}
-			if (allLocksAcquiered) {
-				for (Operation operation : currentOperations) {
-					runOperation(operation);
-				}
+
+			try {
+				Thread.sleep(random.nextInt(100));
+			}catch (InterruptedException e){
+
 			}
-		} finally {
-			for (Operation o : currentOperations) {
-				if(accountlocks.get(o.getAccountId()).isHeldByCurrentThread()) {
-					accountlocks.get(o.getAccountId()).unlock();
-				}
-			}
+
 		}
 	}
 
