@@ -7,8 +7,8 @@ import java.util.concurrent.TimeUnit;
 public class Program {
     // Static variables.
     private static final int NUM_THREADS = 1;
-    private static final int NUM_ACCOUNTS = 6;
-    private static final int FACTOR = 100000;
+    private static final int NUM_ACCOUNTS = 1000;
+    private static final int FACTOR = 1000;
     private static final int TIMEOUT = 60; // Seconds;
     private static final int NUM_TRANSACTIONS = NUM_ACCOUNTS * FACTOR;
     private static Integer[] accountIds = new Integer[NUM_ACCOUNTS];
@@ -55,10 +55,10 @@ public class Program {
             System.out.println("Completed: " + completed);
             System.out.println("Time [ms]: " + time / 1000000);
 
-            for (int i = 0; i < NUM_ACCOUNTS; i++) {
+            /*for (int i = 0; i < NUM_ACCOUNTS; i++) {
                 int balance = bank.getAccountBalance(accountIds[i]);
                 System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
-            }
+            }*/
         }
         catch (Exception exception) {
             exception.printStackTrace();
@@ -89,10 +89,10 @@ public class Program {
             System.out.println("Completed: " + completed);
             System.out.println("Time [ms]: " + time / 1000000);
 
-            for (int i = 0; i < NUM_ACCOUNTS; i++) {
+            /*for (int i = 0; i < NUM_ACCOUNTS; i++) {
                 int balance = bank.getAccountBalance(accountIds[i]);
                 System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
-            }
+            }*/
         }
         catch (Exception exception) {
             exception.printStackTrace();

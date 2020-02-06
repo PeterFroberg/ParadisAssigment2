@@ -3,95 +3,143 @@
 package com.company;
 
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class Bank {
-	// Instance variables.
-	private final List<Account> accounts = new ArrayList<Account>();
+    // Instance variables.
+    private final List<Account> accounts = new ArrayList<Account>();
 
-	private Hashtable<Integer, ReentrantReadWriteLock> accountlocks = new Hashtable<>();
-	//ReentrantLock transactionLock = new ReentrantLock();
+    private Hashtable<Integer, ReentrantReadWriteLock> accountlocks = new Hashtable<>();
+    
+    Random random = new Random();
+    // Instance methods.
 
-	// Instance methods.
+    int newAccount(int balance) {
+        int accountId;
+        accountId = accounts.size(); // FIX ORIGINAL
+        accounts.add(new Account(accountId, balance));
+        accountlocks.put(accountId, new ReentrantReadWriteLock());
+        return accountId;
+    }
 
-	int newAccount(int balance) {
-		int accountId;
-		accountId = accounts.size(); // FIX ORIGINAL
-		accounts.add(new Account(accountId, balance));
-		accountlocks.put(accountId, new ReentrantReadWriteLock());
-		return accountId;
-	}
+    int getAccountBalance(int accountId) {
+        Account account = null;
+        account = accounts.get(accountId);
+        return account.getBalance();
+    }
 
-	int getAccountBalance(int accountId) {
-		Account account = null;
-		account = accounts.get(accountId);
-		return account.getBalance();
-	}
+    void runOperation(Operation operation) {
+        Account account = null;
+        account = accounts.get(operation.getAccountId());
+        //Lås account
+        for (int i = 0; i < 100; i++) {
+            if (accountlocks.get(operation.getAccountId()).writeLock().tryLock()) {
+                try {
+                    int balance = account.getBalance();
+                    balance = balance + operation.getAmount();
+                    account.setBalance(balance);
 
-	void runOperation(Operation operation) {
-		Account account = null;
-		account = accounts.get(operation.getAccountId());
-		//Lås account
-		accountlocks.get(operation.getAccountId()).writeLock().lock();
-		int balance = account.getBalance();
-		balance = balance + operation.getAmount();
-		account.setBalance(balance);
-		//if(accountlocks.get(operation.getAccountId()).isHeldByCurrentThread()){
-		accountlocks.get(operation.getAccountId()).writeLock().unlock();
-		//}
-		//lås upp acoount
-	}
+                } finally {
+                    accountlocks.get(operation.getAccountId()).writeLock().unlock();
+                }
+                break;
+            }else{
+                try{
+                    Thread.sleep(random.nextInt(100));
+                }catch (InterruptedException e){
+                    System.out.println(e);
+                }
+            }
 
-	void runTransaction(Transaction transaction) {
-		List<Operation> currentOperations = transaction.getOperations();
-		Random random = new Random();
-		boolean allLocksAcquiered = true;
-		boolean operationsCompleted = false;
-		// Låsa alla konton med reentrant lock som finns i currentOperations
+        }
+    }
 
-		int i = 0;
-		for (int x = 0; x < 100; x++) {
-			try {
-				while (allLocksAcquiered && !operationsCompleted) {
-					if (accountlocks.get(currentOperations.get(i).getAccountId()).isWriteLocked()) {
-						allLocksAcquiered = false;
-					}else{
-						accountlocks.get(currentOperations.get(i).getAccountId()).writeLock();
-					}
-					i++;
-					if (i >= currentOperations.size()) {
-						operationsCompleted = true;
-					}
-				}
-				if (allLocksAcquiered) {
-					for (Operation operation : currentOperations) {
-						runOperation(operation);
-					}
-					break;
-				}
-			} finally {
-				for (Operation o : currentOperations) {
-					if (accountlocks.get(o.getAccountId()).isWriteLockedByCurrentThread()) {
-						accountlocks.get(o.getAccountId()).writeLock().unlock();
-					}
-				}
-			}
+    private boolean lockOperations(List<Operation> operations) {
 
-			try {
-				Thread.sleep(random.nextInt(100));
-			}catch (InterruptedException e){
 
-			}
+        for (Operation o : operations) {
+            if (!accountlocks.get(o.getAccountId()).writeLock().tryLock()) {
+                return false;
+            }
+        }
+        return true;
 
-		}
-	}
+    }
 
-	public List<Account> getAccounts() {
-		return accounts;
-	}
+    private void releaseCurrentLockOperations(List<Operation> operations) {
+        for (Operation o : operations) {
+            if (accountlocks.get(o.getAccountId()).isWriteLockedByCurrentThread())
+                accountlocks.get(o.getAccountId()).writeLock().unlock();
+        }
+    }
+
+    void runTransaction(Transaction transaction) {
+        List<Operation> currentOperations = transaction.getOperations();
+
+       /* boolean allLocksAcquiered = true;
+        boolean operationsCompleted = false;*/
+        // Låsa alla konton med reentrant lock som finns i currentOperations
+
+
+
+        for (Operation operation : currentOperations) {
+            for (int i = 0; i < 100; i++) {
+                if (lockOperations(currentOperations)) {
+                    try {
+                        runOperation(operation);
+                    } finally {
+                        releaseCurrentLockOperations(currentOperations);
+                    }
+                    break;
+                } else {
+                    releaseCurrentLockOperations(currentOperations);
+                }
+                try {
+                    Thread.sleep(random.nextInt(100)); // Random wait before retry.
+                } catch (InterruptedException e) {
+                    System.out.println(e);
+                }
+            }
+        }
+
+
+        /*int i = 0;
+        for (int x = 0; x < 100; x++) {
+            try {
+                while (allLocksAcquiered && !operationsCompleted) {
+                    if (!accountlocks.get(currentOperations.get(i).getAccountId()).writeLock().tryLock()) {
+                        allLocksAcquiered = false;
+                    }
+                    i++;
+                    if (i >= currentOperations.size()) {
+                        operationsCompleted = true;
+                    }
+                }
+                if (allLocksAcquiered) {
+                    for (Operation operation : currentOperations) {
+                        runOperation(operation);
+                    }
+                }
+            } finally {
+                for (Operation o : currentOperations) {
+                    if (accountlocks.get(o.getAccountId()).isWriteLockedByCurrentThread()) {
+                        accountlocks.get(o.getAccountId()).writeLock().unlock();
+                    }
+                }
+            }
+
+            try {
+                Thread.sleep(random.nextInt(100));
+            } catch (InterruptedException e) {
+
+            }
+
+        }*/
+    }
+
+    public List<Account> getAccounts() {
+        return accounts;
+    }
 
 	/*public static void main(String[] args) throws InterruptedException {
 		Bank bank = new Bank();
