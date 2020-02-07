@@ -10,7 +10,11 @@ class Bank {
     // Instance variables.
     //private final List<Account> accounts = new ArrayList<Account>();
     private final ConcurrentHashMap<Integer, Account> accounts = new ConcurrentHashMap<>();
-    private Hashtable<Integer, ReentrantReadWriteLock> accountlocks = new Hashtable<>();
+
+    /***
+     * Creates a concurentHashMap to store all account locks
+      */
+    private ConcurrentHashMap<Integer, ReentrantReadWriteLock> accountlocks = new ConcurrentHashMap<>();
 
 
     Random random = new Random();
