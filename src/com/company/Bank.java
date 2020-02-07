@@ -28,21 +28,27 @@ class Bank {
         Account account = null;
         account = accounts.get(accountId);
         for (int i = 0; i < 100; i++) {
-            if(accountlocks.get(account.getId()).readLock().tryLock()) {
-                return account.getBalance();
-            }else {
-                try{
+            if (accountlocks.get(account.getId()).readLock().tryLock()) {
+                try {
+                    return account.getBalance();
+                }finally {
+                    accountlocks.get(account.getId()).readLock().unlock();
+                }
+            } else {
+                try {
                     Thread.sleep(random.nextInt(50));
-                }catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     System.out.println(e);
                 }
             }
         }
         return -1;
     }
+
     private boolean getCurrentLock(Account account) {
         return accountlocks.get(account.getId()).writeLock().tryLock();
     }
+
     private void releaseCurrentLock(Account account) {
         accountlocks.get(account.getId()).writeLock().unlock();
     }
@@ -50,12 +56,8 @@ class Bank {
     void runOperation(Operation operation) {
         Account account = null;
         account = accounts.get(operation.getAccountId());
-        synchronized (account){
-            int balance = account.getBalance();
-            balance = balance + operation.getAmount();
-            account.setBalance(balance);
-        }
-        /*//Lås account{
+
+        //Lås account{
 
         for (int i = 0; i < 100; i++) {
             if (getCurrentLock(account)) {
@@ -68,14 +70,14 @@ class Bank {
                     releaseCurrentLock(account);
                 }
                 break;
-            }else{
-                try{
+            } else {
+                try {
                     Thread.sleep(random.nextInt(50));
-                }catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     System.out.println(e);
                 }
             }
-        }*/
+        }
     }
 
     private boolean lockOperations(List<Operation> operations) {

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Program {
     // Static variables.
-    private static final int NUM_THREADS = 4;
+    private static final int NUM_THREADS = 8;
     private static final int NUM_ACCOUNTS = 80000;
     private static final int FACTOR = 200;
     private static final int TIMEOUT = 60; // Seconds;
@@ -58,14 +58,15 @@ public class Program {
             boolean completed = executor.awaitTermination(TIMEOUT, TimeUnit.SECONDS);
             time = System.nanoTime() - time;
 
+            for (int i = 0; i < NUM_ACCOUNTS; i++) {
+                int balance = bank.getAccountBalance(accountIds[i]);
+                System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
+            }
             System.out.println("Test operations finished.");
             System.out.println("Completed: " + completed);
             System.out.println("Time [ms]: " + time / 1000000);
 
-            /*for (int i = 0; i < NUM_ACCOUNTS; i++) {
-                int balance = bank.getAccountBalance(accountIds[i]);
-                System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
-            }*/
+
         }
         catch (Exception exception) {
             exception.printStackTrace();
@@ -92,14 +93,15 @@ public class Program {
             boolean completed = executor.awaitTermination(TIMEOUT, TimeUnit.SECONDS);
             time = System.nanoTime() - time;
 
+            for (int i = 0; i < NUM_ACCOUNTS; i++) {
+                int balance = bank.getAccountBalance(accountIds[i]);
+                System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
+            }
             System.out.println("Test transactions finished.");
             System.out.println("Completed: " + completed);
             System.out.println("Time [ms]: " + time / 1000000);
 
-            /*for (int i = 0; i < NUM_ACCOUNTS; i++) {
-                int balance = bank.getAccountBalance(accountIds[i]);
-                System.out.println("Account: " + accountIds[i] + "; Balance: " + balance);
-            }*/
+
         }
         catch (Exception exception) {
             exception.printStackTrace();
