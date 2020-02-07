@@ -10,7 +10,7 @@ class Bank {
     private final List<Account> accounts = new ArrayList<Account>();
 
     private Hashtable<Integer, ReentrantReadWriteLock> accountlocks = new Hashtable<>();
-    
+
     Random random = new Random();
     // Instance methods.
 
@@ -25,7 +25,24 @@ class Bank {
     int getAccountBalance(int accountId) {
         Account account = null;
         account = accounts.get(accountId);
-        return account.getBalance();
+        for (int i = 0; i < 100; i++) {
+            if(accountlocks.get(account.getId()).readLock().tryLock()) {
+                return account.getBalance();
+            }else {
+                try{
+                    Thread.sleep(random.nextInt(50));
+                }catch (InterruptedException e){
+                    System.out.println(e);
+                }
+            }
+        }
+        return -1;
+    }
+    private boolean getCurrentLock(Account account) {
+        return accountlocks.get(account.getId()).writeLock().tryLock();
+    }
+    private void releaseCurrentLock(Account account) {
+        accountlocks.get(account.getId()).writeLock().unlock();
     }
 
     void runOperation(Operation operation) {
@@ -33,37 +50,33 @@ class Bank {
         account = accounts.get(operation.getAccountId());
         //Lås account
         for (int i = 0; i < 100; i++) {
-            if (accountlocks.get(operation.getAccountId()).writeLock().tryLock()) {
+            if (getCurrentLock(account)) {
                 try {
                     int balance = account.getBalance();
                     balance = balance + operation.getAmount();
                     account.setBalance(balance);
 
                 } finally {
-                    accountlocks.get(operation.getAccountId()).writeLock().unlock();
+                    releaseCurrentLock(account);
                 }
                 break;
             }else{
                 try{
-                    Thread.sleep(random.nextInt(100));
+                    Thread.sleep(random.nextInt(50));
                 }catch (InterruptedException e){
                     System.out.println(e);
                 }
             }
-
         }
     }
 
     private boolean lockOperations(List<Operation> operations) {
-
-
         for (Operation o : operations) {
             if (!accountlocks.get(o.getAccountId()).writeLock().tryLock()) {
                 return false;
             }
         }
         return true;
-
     }
 
     private void releaseCurrentLockOperations(List<Operation> operations) {
@@ -95,7 +108,7 @@ class Bank {
                     releaseCurrentLockOperations(currentOperations);
                 }
                 try {
-                    Thread.sleep(random.nextInt(100)); // Random wait before retry.
+                    Thread.sleep(random.nextInt(50)); // Random wait before retry.
                 } catch (InterruptedException e) {
                     System.out.println(e);
                 }

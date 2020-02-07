@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Program {
     // Static variables.
-    private static final int NUM_THREADS = 1;
-    private static final int NUM_ACCOUNTS = 1000;
+    private static final int NUM_THREADS = 4;
+    private static final int NUM_ACCOUNTS = 5000;
     private static final int FACTOR = 1000;
     private static final int TIMEOUT = 60; // Seconds;
     private static final int NUM_TRANSACTIONS = NUM_ACCOUNTS * FACTOR;
