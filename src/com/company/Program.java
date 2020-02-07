@@ -1,5 +1,6 @@
 package com.company;
 
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -7,8 +8,8 @@ import java.util.concurrent.TimeUnit;
 public class Program {
     // Static variables.
     private static final int NUM_THREADS = 4;
-    private static final int NUM_ACCOUNTS = 5000;
-    private static final int FACTOR = 1000;
+    private static final int NUM_ACCOUNTS = 80000;
+    private static final int FACTOR = 200;
     private static final int TIMEOUT = 60; // Seconds;
     private static final int NUM_TRANSACTIONS = NUM_ACCOUNTS * FACTOR;
     private static Integer[] accountIds = new Integer[NUM_ACCOUNTS];
@@ -23,18 +24,23 @@ public class Program {
             accountIds[i] = bank.newAccount(1000);
         }
 
+        //Random rnd = new Random();
         for (int i = 0; i < NUM_ACCOUNTS; i++) {
-            withdrawals[i] = new Operation(bank, accountIds[i], -100);;
+            withdrawals[i] = new Operation(bank, accountIds[i], -100);
+            //withdrawals[i] = new Operation(bank,rnd.nextInt(NUM_ACCOUNTS), -100);;
         }
 
         for (int i = 0; i < NUM_ACCOUNTS; i++) {
-            deposits[i] = new Operation(bank, accountIds[i], +100);;
+            deposits[i] = new Operation(bank, accountIds[i], +100);
+            //deposits[i] = new Operation(bank, rnd.nextInt(NUM_ACCOUNTS), +100);
         }
     }
 
     // You may use this test to test thread-safety for operations.
     private static void runTestOperations() {
         ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
+
+       // Thread[] threads = new Thread[NUM_THREADS];
 
         Operation[] operations = new Operation[NUM_TRANSACTIONS * 2];
         for (int i = 0; i < NUM_TRANSACTIONS; i++) {
@@ -45,7 +51,8 @@ public class Program {
         try {
             long time = System.nanoTime();
             for (int i = 0; i < NUM_TRANSACTIONS * 2; i++) {
-                executor.execute(operations[i]);
+
+               executor.execute(operations[i]);
             }
             executor.shutdown();
             boolean completed = executor.awaitTermination(TIMEOUT, TimeUnit.SECONDS);
