@@ -32,7 +32,7 @@ class Bank {
      * Method to generate accountNumbers that is thread safe to avoid 2 accounts with the same accountNumber
      * @return - New accountNumber
      */
-    int getNewAccountNumber(){
+    private int getNewAccountNumber(){
         synchronized (newAccountLock) {
             highestAccountNumber ++;
             return highestAccountNumber;
@@ -40,6 +40,7 @@ class Bank {
     }
 
     /***
+     * newAccount method
      * Changed so it use the thread safe method getNewAccountNumber to generate the new account number
      *
      * @param balance - Balance to set on new account
